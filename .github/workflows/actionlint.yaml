@@ -1,6 +1,9 @@
 name: Actionlint
 
-on: [workflow_call]
+on:
+  workflow_call:
+  push:
+    branches: [ "smelc/ci-add-actionlint" ] # Temporary, for testing
 
 jobs:
   actionlint:
