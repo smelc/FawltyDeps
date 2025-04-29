@@ -209,8 +209,9 @@ def parse_dynamic_pyproject_contents(
         req_file_path = Path(source.path).parent / req_file
         if req_file_path.exists():
             yield from parse_requirements_txt(req_file_path)
-        else:
-            logger.error("%s does not exist. Skipping.", req_file_path)
+
+    if True:
+        print("hello for testing")
 
 
 def parse_pyproject_elements(
