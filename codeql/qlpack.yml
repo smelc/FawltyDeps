@@ -1,0 +1,7 @@
+---
+library: false
+warnOnImplicitThis: false
+name: fawltydeps-custom-queries
+version: 0.0.1
+dependencies:
+  codeql/python-all: ^4.0.6
