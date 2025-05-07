@@ -13,36 +13,27 @@
 import python
 import semmle.python.dataflow.new.DataFlow
 
-class UserInputSource extends DataFlow::Node {
-  UserInputSource() {
-    exists(CallNode call |
-      call = this.getAstNode() and
-      call.getFunction().toString() = "input"
-    )
+module SensitiveLoggerConfig implements DataFlow::ConfigSig {  // 1: module always implements DataFlow::ConfigSig or DataFlow::StateConfigSig
+  predicate isSource(DataFlow::Node source) { source.asExpr() instanceof CredentialExpr } // 3: no need to specify 'override'
+  predicate isSink(DataFlow::Node sink) { sinkNode(sink, "log-injection") }
+
+  predicate isBarrier(DataFlow::Node sanitizer) {  // 4: 'isBarrier' replaces 'isSanitizer'
+    sanitizer.asExpr() instanceof LiveLiteral or
+    sanitizer.getType() instanceof PrimitiveType or
+    sanitizer.getType() instanceof BoxedType or
+    sanitizer.getType() instanceof NumberType or
+    sanitizer.getType() instanceof TypeType
   }
+
+  predicate isBarrierIn(DataFlow::Node node) { isSource(node) } // 4: isBarrierIn instead of isSanitizerIn
+
 }
 
-class EvalSink extends DataFlow::Node {
-  EvalSink() {
-    exists(CallNode call |
-      call.getFunction().toString() = "eval" and
-      call.getArg(0) = this.getAstNode()
-    )
-  }
-}
+module SensitiveLoggerFlow = TaintTracking::Global<SensitiveLoggerConfig>; // 2: TaintTracking selected 
 
-class UserInputToEvalConfig extends TaintTracking::Configuration {
-  UserInputToEvalConfig() { this = "UserInputToEvalConfig" }
+import SensitiveLoggerFlow::PathGraph  // 7: the PathGraph specific to the module you are using
 
-  override predicate isSource(DataFlow::Node source) {
-    source instanceof UserInputSource
-  }
-
-  override predicate isSink(DataFlow::Node sink) {
-    sink instanceof EvalSink
-  }
-}
-
-from UserInputToEvalConfig config, DataFlow::PathNode source, DataFlow::PathNode sink
-where config.hasFlowPath(source, sink)
-select sink.getNode(), source, sink, "Calling eval with user input from $@", source.getNode(), "this input"
+from SensitiveLoggerFlow::PathNode source, SensitiveLoggerFlow::PathNode sink  // 8 & 9: using the module directly
+where SensitiveLoggerFlow::flowPath(source, sink)  // 9: using the flowPath from the module 
+select sink.getNode(), source, sink, "This $@ is written to a log file.", source.getNode(),
+  "potentially sensitive information"

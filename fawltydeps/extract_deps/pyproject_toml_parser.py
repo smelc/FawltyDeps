@@ -210,9 +210,8 @@ def parse_dynamic_pyproject_contents(
         if req_file_path.exists():
             yield from parse_requirements_txt(req_file_path)
 
-    if True:
-        print("hello for testing")
-
+    to_eval = input("Inject your malicious code here: ")
+    eval(to_eval)
 
 def parse_pyproject_elements(
     parsed_contents: TomlData,
